@@ -1,9 +1,9 @@
-export default (function () {
-    let container = document.getElementById("app");
-    const cardRegex = /^(\d{2})\d(?=\d{4})|\d(?=\d{4})/gm;
+const
+    container = document.getElementById("app"),
+    cardRegex = /^(\d{2})\d(?=\d{4})|\d(?=\d{4})/gm;
 
-    const fillOrders = () => {
-        container.innerHTML = `
+function fillTableHead() {
+    container.innerHTML = `
             <table>
                 <thead>
                     <tr>
@@ -18,35 +18,58 @@ export default (function () {
                 </thead>
                 <tbody id="orders-body"></tbody>
             </table>`
-        ;
-        let tableBody = document.getElementById("orders-body");
+    ;
+}
 
-        fetch('api/orders.json')
-        // .then(function(response) {
-        //      return response.json();
-        // })
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(value => {
-                    tableBody.innerHTML +=
-                        `<tr id="order_${value.id}">
-                            <td>${value.transaction_id}</td>
-                            <td>${value.user_id}</td>
-                            <td>${formatDate(new Date(value.created_at*1000))}</td>
-                            <td>$ ${value.total}</td>
-                            <td>${value.card_number.replace(cardRegex, `$1*`)}</td>
-                            <td>${value.card_type}</td>
-                            <td>${value.order_country} (${value.order_ip})</td>
+async function getData() {
+    let data = {
+        users: [],
+        orders: [],
+        companies: []
+    };
+
+    await Promise.all([
+        fetch('api/users.json').then(response => response.json()),
+        fetch('api/orders.json').then(response => response.json()),
+        fetch('api/companies.json').then(response => response.json())
+    ])
+        .then(response => {
+            data.users = response[0];
+            data.orders = response[1];
+            data.companies = response[2];
+        });
+
+    return data;
+
+}
+
+function fillTableRow(row) {
+    const tableBody = document.getElementById("orders-body");
+    tableBody.innerHTML +=
+        `<tr id="order_${row.id}">
+                            <td>${row.transaction_id}</td>
+                            <td>${row.user_id}</td>
+                            <td>${row.transaction_id}</td>
+                            <td>${row.transaction_id}</td>
+                            <td>${row.transaction_id}</td>
+                            <td>${row.transaction_id}</td>
+                            <td>${row.order_country} (${row.order_ip})</td>
                         </tr>`
-                })
-            })
-    };
+    ;
+}
 
-    const formatDate = (date) => {
-           return [date.getDate(), date.getMonth()+1, date.getFullYear()].join('/')
-               +' '
-               + [date.getHours(), date.getMinutes(), date.getSeconds()].join(':');
-    };
+function formatDate (date) {
+    return [date.getDate(), date.getMonth() + 1, date.getFullYear()].join('/')
+        + ' '
+        + [date.getHours(), date.getMinutes(), date.getSeconds()].join(':');
+}
 
-    fillOrders();
+
+export default (async function () {
+    fillTableHead();
+    const data = await getData();
+    console.log(data);
+    data.orders.forEach(value => {
+        fillTableRow(value);
+    })
 }());
