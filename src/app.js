@@ -40,7 +40,22 @@ async function getData() {
         });
 
     return data;
+    console.log(data);
 
+}
+
+function showInfo() {
+    let userData = document.getElementsByClassName('user-data');
+    let arr = Array.prototype.slice.call(userData);
+    arr.forEach(value => {
+       value.addEventListener('click', function (e) {
+           e.preventDefault();
+           let userDetails = this.childNodes[3];
+           userDetails.style.display === 'none'
+               ? userDetails.style.display = 'block'
+               : userDetails.style.display = 'none';
+       })
+    });
 }
 
 function fillTableRow(row) {
@@ -48,8 +63,16 @@ function fillTableRow(row) {
     tableBody.innerHTML +=
         `<tr id="order_${row.id}">
                             <td>${row.transaction_id}</td>
-                            <td>${row.user_id}</td>
-                            <td>${row.transaction_id}</td>
+                            <td class="user-data">
+                                <a href="#" class="trest">${row.user.title} ${row.user.first_name} ${row.user.last_name}</a>
+                                <div class="user-details" style="display:none">
+                                    <p>${formatDate(new Date(row.user.birthday*1000))}</p>
+                                    <p><img src="${row.user.avatar}" width="100px"></p>
+                                    <p>Company: <a href="${row.user.company ? row.user.company.url : 'N/A' }" target="_blank">${row.user.company ? row.user.company.title : 'N/A' }</a></p>
+                                    <p>Industry: Apparel / Consumer Services</p>
+                                </div>
+                            </td>
+                            <td>${formatDate(new Date(row.created_at * 1000))}</td>
                             <td>${row.transaction_id}</td>
                             <td>${row.transaction_id}</td>
                             <td>${row.transaction_id}</td>
@@ -58,18 +81,35 @@ function fillTableRow(row) {
     ;
 }
 
-function formatDate (date) {
+function formatDate(date) {
     return [date.getDate(), date.getMonth() + 1, date.getFullYear()].join('/')
         + ' '
         + [date.getHours(), date.getMinutes(), date.getSeconds()].join(':');
 }
 
-
 export default (async function () {
     fillTableHead();
     const data = await getData();
+    let users = {};
+    let companies = {};
+    data.users.forEach(value => {
+        users[value.id] = value;
+    });
+    data.companies.forEach(value => {
+        companies[value.id] = value;
+    });
+    data.users = users;
+    data.companies = companies;
+
+    data.orders.map(value => {
+        value['user'] = data.users[value.user_id];
+        value['user']['title'] = value['user']['gender'] === 'Male' ? 'Mr. ' : 'Ms. ';
+        value['user']['company'] = data.companies[value.user.company_id];
+    });
+
     console.log(data);
     data.orders.forEach(value => {
         fillTableRow(value);
-    })
+    });
+    showInfo();
 }());
