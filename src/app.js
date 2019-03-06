@@ -4,18 +4,27 @@ const
     container = document.getElementById("app"),
     cardRegex = /^(\d{2})\d(?=\d{4})|\d(?=\d{4})/gm;
 
+let
+    initialState = [],
+    state = [],
+    filters = {
+        search: '',
+        filter: null,
+    }
+;
+
 function fillTableHead() {
     container.innerHTML = `
             <table class="table">
                 <thead>
-                    <tr>
-                        <th>Transaction ID</th>
-                        <th>User Info</th>
-                        <th>Order Date</th>
-                        <th>Order Amount</th>
-                        <th>Card Number</th>
-                        <th>Card Type</th>
-                        <th>Location</th>
+                    <tr id="table-header">
+                        <th data-info="transactionId">Transaction ID</th>
+                        <th data-info="userInfo">User Info</th>
+                        <th data-info="orderDate">Order Date</th>
+                        <th data-info="orderAmount">Order Amount</th>
+                        <th data-info="cardNumber">Card Number</th>
+                        <th data-info="cardType">Card Type</th>
+                        <th data-info="location">Location</th>
                     </tr>
                 </thead>
                 <tbody id="orders-body"></tbody>
@@ -23,12 +32,14 @@ function fillTableHead() {
     ;
 }
 
-async function getData() {
+async function getInitialState() {
     let data = {
-        users: [],
-        orders: [],
-        companies: []
-    };
+            users: [],
+            orders: [],
+            companies: []
+        },
+        users = {},
+        companies = {};
 
     await Promise.all([
         fetch('api/users.json').then(response => response.json()),
@@ -39,49 +50,116 @@ async function getData() {
             data.users = response[0];
             data.orders = response[1];
             data.companies = response[2];
-        });
+        })
+        .then(() => {
+            data.users.forEach(value => {
+                users[value.id] = value;
+            });
+            data.companies.forEach(value => {
+                companies[value.id] = value;
+            });
+            data.users = users;
+            data.companies = companies;
 
-    return data;
-    console.log(data);
+            data.orders.map(value => {
+                value['user'] = data.users[value.user_id];
+                value['user']['title'] = value['user']['gender'] === 'Male' ? 'Mr. ' : 'Ms. ';
+                value['user']['company'] = data.companies[value.user.company_id];
+            });
+
+            data.orders.forEach(value => {
+                initialState.push({
+                    id: value.id,
+                    transactionId: value.transaction_id,
+                    userInfo: value.user.first_name + ' ' + value.user.last_name,
+                    user: {
+                        title: value.user.title,
+                        birthday: value.user.birthday ? formatDate(new Date(value.user.birthday * 1000)) : '',
+                        avatar: value.user.avatar || '',
+                        company: value.user.company ? {...value.user.company, url: value.user.company.url || ''} : null
+                    },
+                    orderDate: formatDate(new Date(value.created_at * 1000)),
+                    orderAmount: parseFloat(value.total),
+                    cardNumber: parseInt(value.card_number),
+                    cardType: value.card_type,
+                    location: `${value.order_country} (${value.order_ip})`
+                });
+            });
+
+            state = initialState;
+        })
+    ;
+}
+
+function addEventListeners() {
+    let showInfo = document.getElementsByClassName('show-info');
+
+    Array.prototype.slice.call(showInfo).forEach(value => {
+        value.addEventListener('click', function (e) {
+            e.preventDefault();
+            let userDetails = this.nextElementSibling;
+            userDetails.style.display === 'none'
+                ? userDetails.style.display = 'block'
+                : userDetails.style.display = 'none';
+        })
+    });
+
+    let tableHeader = document.getElementById('table-header');
+    // console.log('tableHeader', tableHeader);
+
+    Array.prototype.slice.call(tableHeader.children).forEach(value => {
+        value.addEventListener('click', function (e) {
+            e.preventDefault();
+            let field = this.getAttribute('data-info');
+            sortByField(field);
+            render();
+        })
+    })
+
 
 }
 
-function showInfo() {
-    let userData = document.getElementsByClassName('user-data');
-    let arr = Array.prototype.slice.call(userData);
-    arr.forEach(value => {
-       value.addEventListener('click', function (e) {
-           e.preventDefault();
-           console.log(e);
-           let userDetails = this.childNodes[3];
-           userDetails.style.display === 'none'
-               ? userDetails.style.display = 'block'
-               : userDetails.style.display = 'none';
-       })
+function sortByField(field) {
+    console.log(field);
+    state.sort((a, b) => {
+        if (a[field] < b[field]) {
+            return -1;
+        }
+        if (a[field] > b[field]) {
+            return 1;
+        }
+        return 0;
     });
 }
 
-function fillTableRow(row) {
+function render() {
     const tableBody = document.getElementById("orders-body");
-    tableBody.innerHTML +=
-        `<tr id="order_${row.id}">
-                            <td>${row.transaction_id}</td>
+    tableBody.innerHTML = '';
+
+    state.forEach(value => {
+        tableBody.innerHTML +=
+            `<tr id="order_${value.id}">
+                            <td>${value.transactionId}</td>
                             <td class="user-data">
-                                <a href="#" class="trest">${row.user.title} ${row.user.first_name} ${row.user.last_name}</a>
+                                <a href="#" class="show-info">${value.user.title} ${value.userInfo}</a>
                                 <div class="user-details" style="display:none">
-                                    <p>${formatDate(new Date(row.user.birthday*1000))}</p>
-                                    <p><img src="${row.user.avatar}" width="100px"></p>
-                                    <p>Company: <a href="${row.user.company ? row.user.company.url : 'N/A' }" target="_blank">${row.user.company ? row.user.company.title : 'N/A' }</a></p>
-                                    <p>Industry: Apparel / Consumer Services</p>
+                                    <p>${value.user.birthday}</p>
+                                    <p><img src="${value.user.avatar}" width="100px"></p>
+                                    ${value.user.company ? renderCompanyInfo(value.user.company) : ''}
                                 </div>
                             </td>
-                            <td>${formatDate(new Date(row.created_at * 1000))}</td>
-                            <td class="order-amount">$ ${row.total}</td>
-                            <td>${row.card_number.replace(cardRegex, `$1*`)}</td>
-                            <td>${row.card_type}</td>
-                            <td>${row.order_country} (${row.order_ip})</td>
+                            <td>${value.orderDate}</td>
+                            <td class="order-amount">$ ${value.orderAmount}</td>
+                            <td>${value.cardNumber.toString().replace(cardRegex, `$1*`)}</td>
+                            <td>${value.cardType}</td>
+                            <td>${value.location}</td>
                         </tr>`
-    ;
+        ;
+    });
+}
+
+function renderCompanyInfo(company) {
+    return `<p>Company: <a href="${company.url}" target="_blank">${company.title}</a></p><p>${company.industry}</p>`;
 }
 
 function fillTable() {
@@ -120,8 +198,6 @@ function getOrdersCount() {
 
 function getOrdersTotal() {
     let ordersTotal = document.querySelectorAll('.order-amount');
-    console.log(ordersTotal);
-
 }
 
 function formatDate(date) {
@@ -132,28 +208,7 @@ function formatDate(date) {
 
 export default (async function () {
     fillTableHead();
-    const data = await getData();
-    let users = {};
-    let companies = {};
-    data.users.forEach(value => {
-        users[value.id] = value;
-    });
-    data.companies.forEach(value => {
-        companies[value.id] = value;
-    });
-    data.users = users;
-    data.companies = companies;
-
-    data.orders.map(value => {
-        value['user'] = data.users[value.user_id];
-        value['user']['title'] = value['user']['gender'] === 'Male' ? 'Mr. ' : 'Ms. ';
-        value['user']['company'] = data.companies[value.user.company_id];
-    });
-
-    console.log(data);
-    data.orders.forEach(value => {
-        fillTableRow(value);
-    });
-    fillTable();
-    showInfo();
+    await getInitialState();
+    render();
+    addEventListeners();
 }());
