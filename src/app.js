@@ -1,10 +1,12 @@
+import 'bootstrap';
+
 const
     container = document.getElementById("app"),
     cardRegex = /^(\d{2})\d(?=\d{4})|\d(?=\d{4})/gm;
 
 function fillTableHead() {
     container.innerHTML = `
-            <table>
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Transaction ID</th>
@@ -50,6 +52,7 @@ function showInfo() {
     arr.forEach(value => {
        value.addEventListener('click', function (e) {
            e.preventDefault();
+           console.log(e);
            let userDetails = this.childNodes[3];
            userDetails.style.display === 'none'
                ? userDetails.style.display = 'block'
@@ -73,12 +76,52 @@ function fillTableRow(row) {
                                 </div>
                             </td>
                             <td>${formatDate(new Date(row.created_at * 1000))}</td>
-                            <td>${row.transaction_id}</td>
-                            <td>${row.transaction_id}</td>
-                            <td>${row.transaction_id}</td>
+                            <td class="order-amount">$ ${row.total}</td>
+                            <td>${row.card_number.replace(cardRegex, `$1*`)}</td>
+                            <td>${row.card_type}</td>
                             <td>${row.order_country} (${row.order_ip})</td>
                         </tr>`
     ;
+}
+
+function fillTable() {
+    document.getElementById("orders-body").innerHTML += `
+    <tr>
+    <td>Orders Count</td>
+    <td  colspan="6">${getOrdersCount()}</td>
+</tr>
+<tr>
+    <td>Orders Total</td>
+    <td  colspan="6">$ ${getOrdersTotal()}</td>
+</tr>
+<tr>
+    <td>Median Value</td>
+    <td  colspan="6">$ 593.72</td>
+</tr>
+<tr>
+    <td>Average Check</td>
+    <td  colspan="6">$ 611.16</td>
+</tr>
+<tr>
+    <td>Average Check (Female)</td>
+    <td  colspan="6">$ 395.18</td>
+</tr>
+<tr>
+    <td>Average Check (Male)</td>
+    <td  colspan="6">$ 692.15</td>
+</tr>`
+}
+
+function getOrdersCount() {
+    let table = document.querySelector('.table');
+    let count = table.rows.length;
+    return count;
+}
+
+function getOrdersTotal() {
+    let ordersTotal = document.querySelectorAll('.order-amount');
+    console.log(ordersTotal);
+
 }
 
 function formatDate(date) {
@@ -111,5 +154,6 @@ export default (async function () {
     data.orders.forEach(value => {
         fillTableRow(value);
     });
+    fillTable();
     showInfo();
 }());
