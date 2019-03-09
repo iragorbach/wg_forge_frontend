@@ -2,7 +2,7 @@ export default class Storage {
     constructor(defaultData) {
         this.defaultData = defaultData || [];
         this.state = this.defaultData;
-        this.filter = null;
+        this.sort = null;
         this.query = null;
     }
 }

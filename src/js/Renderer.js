@@ -10,31 +10,32 @@ export default class Renderer {
         `
     }
 
-    header(filter, query) {
+    header(sort, query) {
         document.getElementById(tableHeadId).innerHTML = `
             <tr id="table-header-title">
-                <th data-info="transactionId">Transaction ID</th>
-                <th data-info="userInfo">User Info</th>
-                <th data-info="orderDate">Order Date</th>
-                <th data-info="orderAmount">Order Amount</th>
+                <th data-info="transactionId" class="sortable">Transaction ID</th>
+                <th data-info="userInfo" class="sortable">User Info</th>
+                <th data-info="orderDate" class="sortable">Order Date</th>
+                <th data-info="orderAmount" class="sortable">Order Amount</th>
                 <th>Card Number</th>
-                <th data-info="cardType">Card Type</th>
-                <th data-info="location">Location</th>
+                <th data-info="cardType" class="sortable">Card Type</th>
+                <th data-info="location" class="sortable">Location</th>
                 <th>Search:</th>
                 <th><input type="text" id="search" value="${query || ''}"></th>
             </tr>`
         ;
-        if (filter) {
-            document.querySelectorAll(`[data-info='${filter}']`)[0].innerHTML += ' <span>&#8595;</span>';
+        if (sort) {
+            document.querySelectorAll(`[data-info='${sort}']`)[0].innerHTML += ' <span>&#8595;</span>';
         }
     }
 
     tableBody(rows) {
         let tableBody = '';
 
-        rows.forEach(value => {
-            tableBody +=
-                `<tr id="order_${value.id}">
+        if (rows.length) {
+            rows.forEach(value => {
+                tableBody +=
+                    `<tr id="order_${value.id}">
                             <td>${value.transactionId}</td>
                             <td class="user-data">
                                 <a href="#" class="show-info">${value.user.title} ${value.userInfo}</a>
@@ -50,8 +51,11 @@ export default class Renderer {
                             <td>${value.cardType}</td>
                             <td>${value.location}</td>
                         </tr>`
-            ;
-        });
+                ;
+            });
+        } else {
+            tableBody = `<tr><td>Nothing found</td></tr>`
+        }
 
         document.getElementById(tableBodyId).innerHTML = tableBody;
     }

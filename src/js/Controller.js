@@ -87,13 +87,13 @@ export default class Controller {
             this.storage.state = state;
         }
 
-        if (this.storage.filter) {
-            this.sortByField(this.storage.filter);
+        if (this.storage.sort) {
+            this.sortByField(this.storage.sort);
         }
     }
 
     sortByField(field) {
-        this.storage.filter = field;
+        this.storage.sort = field;
 
         this.storage.state.sort((a, b) => {
             if (a[field] < b[field]) {
