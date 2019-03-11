@@ -8,10 +8,14 @@ import '../node_modules/bootstrap/dist/css/bootstrap.css';
 
 export default (async function () {
     let
-        fetcher = new Fetcher(),
-        storage = new Storage(await fetcher.getData()),
-        render = new Renderer(),
-        controller = new Controller(storage, render);
+        storage = new Storage({
+            orders: await Fetcher.getData(),
+            currencies: await Fetcher.getCurrencies(),
+            sort: '',
+            query: ''
+        }),
+        renderer = new Renderer(),
+        controller = new Controller(storage, renderer);
 
     controller.init();
 }());

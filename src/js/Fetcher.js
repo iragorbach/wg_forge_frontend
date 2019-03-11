@@ -1,5 +1,17 @@
 export default class Fetcher {
-    async getData() {
+    static async getCurrencies() {
+        let currencies = {};
+
+        await fetch('https://api.exchangeratesapi.io/latest?base=USD')
+            .then(response => response.json())
+            .then(response => {
+                currencies = response.rates;
+            });
+
+        return currencies;
+    }
+
+    static async getData() {
         let state = [];
 
         await Promise.all([
@@ -15,14 +27,14 @@ export default class Fetcher {
                 };
             })
             .then((data) => {
-                state = this.format(data)
+                state = Fetcher.format(data);
             })
         ;
 
         return state;
     }
 
-    format(data) {
+    static format(data) {
         let
             result = [],
             users = {},
@@ -55,6 +67,8 @@ export default class Fetcher {
                 },
                 orderDate: this.formatDate(new Date(value.created_at * 1000)),
                 orderAmount: parseFloat(value.total),
+                currentAmount: parseFloat(value.total),
+                currency: 'USD',
                 cardNumber: parseInt(value.card_number),
                 cardType: value.card_type,
                 location: `${value.order_country} (${value.order_ip})`
@@ -64,7 +78,7 @@ export default class Fetcher {
         return result;
     }
 
-    formatDate(date) {
+    static formatDate(date) {
         return [date.getDate(), date.getMonth() + 1, date.getFullYear()].join('/')
             + ' '
             + [date.getHours(), date.getMinutes(), date.getSeconds()].join(':');

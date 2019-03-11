@@ -11,17 +11,18 @@ export default class Controller {
     }
 
     renderBody() {
-        this.renderer.tableBody(this.storage.state);
+        this.renderer.tableBody(this.storage.state.orders);
         this.renderer.statistic(this.calculateStatistic());
         this.addUserInfoListener();
     }
 
-    renderHead(field, query) {
-        this.renderer.header(field, query);
+    renderHead() {
+        this.renderer.header(this.storage.state.sort, this.storage.state.query);
+        this.renderer.selectCurrency(this.storage.state.currencies);
         this.addSortingListener();
         this.addSearchListener();
+        this.addChangeCurrencyListener();
     }
-
 
     addSearchListener() {
         let self = this;
@@ -57,21 +58,40 @@ export default class Controller {
                 let field = this.getAttribute('data-info');
                 if (field) {
                     self.sortByField(field);
-                    self.renderHead(field, self.storage.query);
+                    self.renderHead();
                     self.renderBody();
                 }
             });
         });
     }
 
+    addChangeCurrencyListener() {
+        let self = this;
+
+        document.getElementById('exampleFormControlSelect1').addEventListener('change',function (e) {
+            self.changeOrderAmount(e.target.value);
+            self.renderBody();
+        });
+    }
+
+
+    changeOrderAmount(currency) {
+        let currencyRate = this.storage.state.currencies[currency];
+
+        this.storage.state.orders.forEach(value => {
+            value.currentAmount = parseFloat((value.orderAmount * currencyRate).toFixed(2));
+            value.currency = currency;
+        });
+    }
 
     search(query) {
-        this.storage.state = this.storage.defaultData;
+        this.storage.state.orders = this.storage.defaultData.orders;
+        this.storage.state.query = query;
 
         if (query) {
-            let state = [];
+            let orders = [];
 
-            this.storage.state.map(value => {
+            this.storage.state.orders.map(value => {
                 if (
                     value.userInfo.toLowerCase().indexOf(query.toLowerCase()) !== -1
                     || value.transactionId.indexOf(query) !== -1
@@ -79,23 +99,22 @@ export default class Controller {
                     || value.cardType.indexOf(query) !== -1
                     || value.location.toLowerCase().indexOf(query.toLowerCase()) !== -1
                 ) {
-                    state.push(value);
+                    orders.push(value);
                 }
             });
 
-            this.storage.query = query;
-            this.storage.state = state;
+            this.storage.state.orders = orders;
         }
 
-        if (this.storage.sort) {
-            this.sortByField(this.storage.sort);
+        if (this.storage.state.sort) {
+            this.sortByField(this.storage.state.sort);
         }
     }
 
     sortByField(field) {
-        this.storage.sort = field;
+        this.storage.state.sort = field;
 
-        this.storage.state.sort((a, b) => {
+        this.storage.state.orders.sort((a, b) => {
             if (a[field] < b[field]) {
                 return -1;
             }
@@ -107,7 +126,9 @@ export default class Controller {
     }
 
     calculateStatistic() {
-        let statistic = {
+        let
+            orders = this.storage.state.orders,
+            statistic = {
             ordersCount: 0,
             ordersTotal: 0,
             medianValue: 0,
@@ -120,16 +141,16 @@ export default class Controller {
             averageCheckM: 0
         };
 
-        if (this.storage.state.length) {
-            statistic.ordersCount = this.storage.state.length;
+        if (orders.length) {
+            statistic.ordersCount = orders.length;
 
-            let sortedOrders = this.storage.state;
+            let sortedOrders = orders;
 
             sortedOrders.sort((a, b) => {
                 return parseFloat(a['orderAmount']) - parseFloat(b['orderAmount']);
             });
 
-            this.storage.state.forEach(value => {
+            orders.forEach(value => {
                 statistic.ordersTotal += parseFloat(value.orderAmount);
 
                 if (value.user.gender === 'Male') {
@@ -140,7 +161,6 @@ export default class Controller {
                     statistic.countFemale += 1;
                 }
             });
-            console.log(statistic.medianValue);
 
             statistic.ordersTotal = statistic.ordersTotal.toFixed(2);
             statistic.averageCheck = (statistic.ordersTotal / statistic.ordersCount).toFixed(2);

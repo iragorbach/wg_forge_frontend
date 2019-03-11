@@ -1,9 +1,9 @@
-import {container, tableBodyId, tableHeadId, cardRegex} from "./Consts";
+import {cardRegex, container, tableBodyId, tableHeadId} from "./Consts";
 
 export default class Renderer {
     table() {
         container.innerHTML = `
-                <table class="table">
+        <table class="table">
             <thead id="${tableHeadId}"></thead>
             <tbody id="${tableBodyId}"></tbody>
         </table>
@@ -16,7 +16,7 @@ export default class Renderer {
                 <th data-info="transactionId" class="sortable">Transaction ID</th>
                 <th data-info="userInfo" class="sortable">User Info</th>
                 <th data-info="orderDate" class="sortable">Order Date</th>
-                <th data-info="orderAmount" class="sortable">Order Amount</th>
+                <th data-info="currentAmount" class="sortable">Order Amount</th>
                 <th>Card Number</th>
                 <th data-info="cardType" class="sortable">Card Type</th>
                 <th data-info="location" class="sortable">Location</th>
@@ -29,11 +29,32 @@ export default class Renderer {
         }
     }
 
-    tableBody(rows) {
+
+    selectCurrency(currencies){
+        document.getElementById(tableHeadId).innerHTML += `
+        <tr>
+            <th colspan="8">
+              <div class="form-group">
+                <label for="exampleFormControlSelect1">Select currency</label>
+                <select class="form-control" id="exampleFormControlSelect1">
+                     
+                </select>
+              </div>
+            </th>
+        </tr>
+        `
+        for(let currency in currencies) {
+            document.getElementById('exampleFormControlSelect1').innerHTML += `
+            <option value="${currency}" ${ currency == 'USD' ? 'selected="selected"' : '' }>${currency}</option>
+            `
+        }
+    }
+
+    tableBody(orders) {
         let tableBody = '';
 
-        if (rows.length) {
-            rows.forEach(value => {
+        if (orders.length) {
+            orders.forEach(value => {
                 tableBody +=
                     `<tr id="order_${value.id}">
                             <td>${value.transactionId}</td>
@@ -46,7 +67,7 @@ export default class Renderer {
                                 </div>
                             </td>
                             <td>${value.orderDate}</td>
-                            <td class="order-amount">$ ${value.orderAmount}</td>
+                            <td class="order-amount">${value.currency} ${value.currentAmount}</td>
                             <td>${value.cardNumber.toString().replace(cardRegex, `$1*`)}</td>
                             <td>${value.cardType}</td>
                             <td>${value.location}</td>
@@ -63,6 +84,7 @@ export default class Renderer {
     companyInfo(company) {
         return `<p>Company: <a href="${company.url}" target="_blank">${company.title}</a></p><p>${company.industry}</p>`;
     }
+
 
     statistic(statistic) {
         document.getElementById(tableBodyId).innerHTML +=
