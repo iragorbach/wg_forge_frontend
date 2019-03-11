@@ -107,7 +107,7 @@ export default class Controller {
     }
 
     calculateStatistic() {
-        let statistic =  {
+        let statistic = {
             ordersCount: 0,
             ordersTotal: 0,
             medianValue: 0,
@@ -123,6 +123,12 @@ export default class Controller {
         if (this.storage.state.length) {
             statistic.ordersCount = this.storage.state.length;
 
+            let sortedOrders = this.storage.state;
+
+            sortedOrders.sort((a, b) => {
+                return parseFloat(a['orderAmount']) - parseFloat(b['orderAmount']);
+            });
+
             this.storage.state.forEach(value => {
                 statistic.ordersTotal += parseFloat(value.orderAmount);
 
@@ -134,13 +140,15 @@ export default class Controller {
                     statistic.countFemale += 1;
                 }
             });
+            console.log(statistic.medianValue);
 
             statistic.ordersTotal = statistic.ordersTotal.toFixed(2);
             statistic.averageCheck = (statistic.ordersTotal / statistic.ordersCount).toFixed(2);
+            statistic.medianValue = sortedOrders[Math.floor(statistic.ordersCount / 2)]['orderAmount'];
             statistic.averageCheckM = (statistic.totalMale / statistic.countMale).toFixed(2);
             statistic.averageCheckF = (statistic.totalFemale / statistic.countFemale).toFixed(2);
         } else {
-            statistic =  {
+            statistic = {
                 ordersCount: 'n/a',
                 ordersTotal: 'n/a',
                 medianValue: 'n/a',
